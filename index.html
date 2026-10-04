@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PgBackupLab</title>
+  <meta name="description" content="Laboratorio de estrategias de respaldo y recuperación en PostgreSQL: pg_dump, respaldo físico y PITR." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛟</text></svg>" />
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <div id="cargando" class="cargando">
+    <div class="spinner"></div>
+    <p>Iniciando PostgreSQL 18 en tu navegador (WebAssembly)…</p>
+  </div>
+
+  <header class="cabecera">
+    <div>
+      <h1>🛟 PgBackupLab</h1>
+      <p>Estrategias de respaldo y recuperación sobre un <strong>PostgreSQL real</strong> que corre en tu navegador.</p>
+    </div>
+    <div class="autor">
+      <span>Autor: <strong>Luis Fernando Vilca Barrientos</strong></span>
+      <a href="https://github.com/FeRnAn101002/backup-strategies-postgresql" target="_blank" rel="noopener">Código en GitHub ↗</a>
+    </div>
+  </header>
+
+  <main class="rejilla">
+    <section class="panel" id="panel-prod">
+      <h2><span class="paso">1</span> Base de datos en producción</h2>
+      <p class="ayuda" id="version"></p>
+      <table class="tabla" id="tabla-huella">
+        <thead><tr><th>Tabla</th><th>Filas</th><th>MD5 del contenido</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="acciones">
+        <button id="btn-actividad">➕ Generar actividad (5 pedidos)</button>
+      </div>
+      <div class="indicadores">
+        <div class="indicador"><span id="ind-wal">0</span><small>cambios archivados (WAL lógico)</small></div>
+        <div class="indicador"><span id="ind-rpo">—</span><small>cambios desde el último respaldo completo</small></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-backup">
+      <h2><span class="paso">2</span> Respaldar</h2>
+      <div class="estrategias">
+        <button class="estrategia" id="btn-logico">
+          <strong>Lógico completo</strong><span>pg_dump → script .sql portable</span>
+        </button>
+        <button class="estrategia" id="btn-fisico">
+          <strong>Físico completo</strong><span>directorio de datos → .tar.gz (como pg_basebackup)</span>
+        </button>
+        <div class="estrategia estatica">
+          <strong>Continuo (PITR)</strong><span>respaldo físico + archivo de cambios; activo automáticamente</span>
+        </div>
+      </div>
+      <h3>Catálogo de respaldos</h3>
+      <table class="tabla" id="tabla-backups">
+        <thead><tr><th>Respaldo</th><th>LSN</th><th>Tamaño</th><th>Tiempo</th><th>SHA-256</th><th></th></tr></thead>
+        <tbody><tr class="vacio"><td colspan="6">Aún no hay respaldos.</td></tr></tbody>
+      </table>
+    </section>
+
+    <section class="panel peligro" id="panel-desastre">
+      <h2><span class="paso">3</span> Provocar un desastre</h2>
+      <p class="ayuda">Errores humanos reales: la causa más común de pérdida de datos.</p>
+      <div class="acciones">
+        <select id="sel-desastre"></select>
+        <button id="btn-desastre" class="rojo">💥 Ejecutar</button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-recuperar">
+      <h2><span class="paso">4</span> Recuperar</h2>
+      <label>Respaldo a usar
+        <select id="sel-backup"><option value="">— primero crea un respaldo —</option></select>
+      </label>
+      <label>Recuperar hasta
+        <select id="sel-punto"></select>
+      </label>
+      <p class="ayuda" id="ayuda-punto">Con un respaldo físico puedes recuperar a cualquier cambio archivado (PITR).</p>
+      <div class="acciones">
+        <button id="btn-restaurar" class="verde">♻️ Restaurar en instancia nueva y verificar</button>
+      </div>
+      <div id="resultado"></div>
+    </section>
+
+    <section class="panel ancho" id="panel-sql">
+      <h2>Consola SQL</h2>
+      <div class="acciones">
+        <input id="txt-sql" value="SELECT estado, count(*) FROM pedidos GROUP BY estado ORDER BY 2 DESC" spellcheck="false" />
+        <button id="btn-sql">Ejecutar</button>
+      </div>
+      <pre id="sql-salida" class="salida"></pre>
+    </section>
+
+    <section class="panel ancho" id="panel-bitacora">
+      <h2>Bitácora</h2>
+      <ol id="bitacora" class="bitacora"></ol>
+    </section>
+
+    <section class="panel ancho teoria">
+      <h2>Buenas prácticas que aplica este laboratorio</h2>
+      <ul>
+        <li><strong>Regla 3-2-1:</strong> 3 copias, en 2 medios distintos, 1 fuera del sitio. Aquí: la base viva, el catálogo en memoria y el archivo descargado.</li>
+        <li><strong>Restaurar siempre en una instancia nueva</strong> y comparar huellas (filas + MD5) antes de reemplazar producción.</li>
+        <li><strong>Integridad:</strong> cada respaldo guarda su SHA-256; un archivo alterado se rechaza.</li>
+        <li><strong>RPO</strong> (cuántos datos puedo perder) baja con el archivado continuo; <strong>RTO</strong> (cuánto tardo en volver) se mide en cada restauración.</li>
+        <li><strong>Retención GFS:</strong> diarios, semanales y mensuales (la función <code>retencionGFS</code> está en el código).</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="pie">PostgreSQL ejecutado con <a href="https://pglite.dev" target="_blank" rel="noopener">PGlite</a> · Desplegado automáticamente con GitHub Actions en GitHub Pages</footer>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

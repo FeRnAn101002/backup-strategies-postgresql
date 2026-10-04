@@ -1,0 +1,23 @@
+name: Simulacro semanal de restauración
+
+# Un respaldo que nunca se restaura no es un respaldo: cada lunes se repite
+# el ciclo respaldar -> desastre -> restaurar -> verificar huellas.
+on:
+  schedule:
+    - cron: '0 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulacro:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --reporter=verbose
